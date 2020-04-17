@@ -2,15 +2,14 @@
 
 using namespace std;
 
-bool isMagic(vector<vector<int>> s)
+bool isMagic(const vector<vector<int>>& s)
 {
 	// Verify that elements are not repeated
 	vector<int> aux = {s[0][0], s[0][1], s[0][2], s[1][0], s[1][1], s[1][2], s[2][0], s[2][1], s[2][2]};
 
-	sort(aux.begin(), aux.end());
-	for (int i = 0; i < 8; i++) {
-		if (aux[i] == aux[i + 1]) return false;
-	}
+	for (int i = 0; i < 8; i++)
+		for (int j = i + 1; j < 9; j++)
+			if (aux[i] == aux[j]) return false;
 
 	int sum0 = s[0][0] + s[0][1] + s[0][2];
 
@@ -27,7 +26,8 @@ bool isMagic(vector<vector<int>> s)
 	return true;
 }
 
-unsigned int costBetweenSquares(vector<vector<int>> s1, vector<vector<int>> s2)
+unsigned int costBetweenSquares(const vector<vector<int>>& s1,
+	       	                const vector<vector<int>>& s2)
 {
 	unsigned int cost{};
 	for (int i = 0; i < 3; i++)

@@ -4,9 +4,6 @@ using namespace std;
 
 inline bool isMagic(const int s[9])
 {
-	// Verify that elements are not repeated
-	
-
 	const int sum0 = s[0] + s[1] + s[2];
 
 	if (s[3] + s[4] + s[5] != sum0) return false;
@@ -18,12 +15,6 @@ inline bool isMagic(const int s[9])
 
 	if (s[0] + s[4] + s[8] != sum0) return false;
 	if (s[6] + s[4] + s[2] != sum0) return false;
-
-	//for (int i1 = 0; i1 < 9; i1++) {
-	//for (int i2 = i1 + 1; i2 < 9; i2++) {
-	//	if (s[i1] == s[i2]) return false;
-	//}
-	//}
 
 	return true;
 }
@@ -62,27 +53,10 @@ unsigned int formingMagicSquare(const int s[9])
 			unsigned int cost = costBetweenSquares(trialSquare, s);
 			if (cost < minCost) {
 				minCost = cost;
-				//printSquare(trialSquare);
 			}
 		}
 		}
-		//unsigned int cost = costBetweenSquares(trialSquare, s);
-		//if (cost < minCost) {
-		//	bool isMagicF = isMagic(trialSquare);
-		//	if (isMagicF) {
-		//		minCost = cost;
-		//		//printSquare(trialSquare);
-		//	}
-		//}
-	}
-	}
-	}
-	}
-	}
-	}
-	}
-	}
-	}
+	}}}}}}}}}
 
 	return minCost;
 }
@@ -102,15 +76,9 @@ int main()
 {
 
 	const int square1[9] = {5, 3, 4, 1, 5, 8, 6, 4, 2};
-	//cout << isMagic(square1) << endl;
+	//const int square2[9] = {4, 9, 2, 3, 5, 7, 8, 1, 5};
+	//const int square3[9] = {4, 8, 2, 4, 5, 7, 6, 1, 6};
 
-	const int square2[9] = {4, 9, 2, 3, 5, 7, 8, 1, 5};
-	//cout << isMagic(square2) << endl;
-
-	const int square3[9] = {4, 8, 2, 4, 5, 7, 6, 1, 6};
-	//cout << isMagic(square3) << endl;
-
-	//cout << costBetweenSquares(square1, square1) << endl;
-	cout << formingMagicSquare(square3) << endl;
+	cout << formingMagicSquare(square1) << endl;
 	return 0;
 }
