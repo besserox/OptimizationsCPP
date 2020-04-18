@@ -2,7 +2,7 @@
 
 using namespace std;
 
-inline bool isMagic(const int s[9])
+bool isMagic(const int s[9])
 {
 	const int sum0 = s[0] + s[1] + s[2];
 
@@ -19,7 +19,7 @@ inline bool isMagic(const int s[9])
 	return true;
 }
 
-inline unsigned int costBetweenSquares(const int s1[9], const int s2[9])
+unsigned int costBetweenSquares(const int s1[9], const int s2[9])
 {
 	unsigned int cost{};
 	for (int i = 0; i < 9; i++)
