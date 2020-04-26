@@ -24,19 +24,22 @@ void SphericToCartesian(double cartesianVector[3], const double sphericVector[3]
 
 Particle::Particle()
 {
-	const double maxVelocity = 1000.0;
+	const double maxVelocity = 5000.0;
 
 	uniform_real_distribution<double> dist_radius(0.0, 1.0);
 	uniform_real_distribution<double> dist_psi(0.0, 2 * M_PI);
-	uniform_real_distribution<double> dist_phi(-0.5 * M_PI, 0.5 * M_PI);
+	uniform_real_distribution<double> dist_phi(0.0, M_PI);
 
 	double positionSpheric[3] = {dist_radius(eng), dist_psi(eng), dist_phi(eng)};
-	double velocitySpheric[3] = {dist_radius(eng), dist_psi(eng), dist_phi(eng)};
-	for (auto& v : velocitySpheric)
-		v *= maxVelocity;
 
 	SphericToCartesian(pos, positionSpheric);
-	SphericToCartesian(vel, velocitySpheric);
+
+	vel[0] = pos[0];
+       	vel[1] = pos[1];
+       	vel[2] = pos[2];
+	double mod = sqrt(pos[0] * pos[0] + pos[1] * pos[1] + pos[2] * pos[2]);
+	for (auto& v : vel)
+		v *= maxVelocity / mod;
 }
 
 struct Problem {
@@ -132,7 +135,10 @@ void Problem::integrate()
 		mParticles[pi].vel[0] += force[0] * mInverseMass * mDt;
 		mParticles[pi].vel[1] += force[1] * mInverseMass * mDt;
 		mParticles[pi].vel[2] += force[2] * mInverseMass * mDt;
+	}
 
+	// Update pos this should be done after all forces/velocities have being computed
+	for (int pi = 0; pi < mNumParticles; pi++) {
 		// dx / dt = v
 		mParticles[pi].pos[0] += mParticles[pi].vel[0] * mDt;
 		mParticles[pi].pos[1] += mParticles[pi].vel[1] * mDt;
@@ -142,9 +148,9 @@ void Problem::integrate()
 
 int main()
 {
-	const int nTimeSteps = 500;
+	const int nTimeSteps = 100;
 	const double Mass = 1e12;
-	const double dt = 1e-5;
+	const double dt = 1e-4;
 	const unsigned numParticles = 10000;
 	Problem problem(Mass, dt, numParticles);
 	int tsp = 0;
@@ -152,8 +158,8 @@ int main()
 	for (int ts = 0; ts < nTimeSteps; ts++) {
 
 		cout << ts << endl;
-		if (ts % 10 == 0)
-			problem.write_csv(tsp++);
+		//if (ts % 5 == 0)
+		//	problem.write_csv(tsp++);
 		//problem.write_console(ts);
 		problem.integrate();
 
