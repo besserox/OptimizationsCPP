@@ -1,0 +1,45 @@
+\documentclass[border=10pt]{standalone}
+\usepackage{pgfplots}
+\usepackage{tikz}
+\pgfplotsset{width=13cm,compat=1.8}
+
+\begin{document}
+\begin{tikzpicture}[]
+  \begin{axis}[scale=1.0,
+	  ymax = 45,
+	  ymin = 0,
+      bar width=55pt,
+      x=4cm,
+      ylabel={Computing Time [sec]},
+      symbolic x coords={1 Thread,2 Threads,3 Threads,4 Threads,5 Threads,6 Threads,7 Threads,8 Threads},
+      xtick={1 Thread,2 Threads,3 Threads,4 Threads,5 Threads,6 Threads,7 Threads,8 Threads}
+    ]
+    \addplot[fill=blue,ybar] plot coordinates {
+	    (1 Thread, 42.7)
+    };
+    \addplot[fill=blue,ybar] plot coordinates {
+	    (2 Threads, 21.5)
+    };
+    \addplot[fill=blue,ybar] plot coordinates {
+	    (3 Threads, 14.5)
+    };
+    \addplot[fill=blue,ybar] plot coordinates {
+	    (4 Threads, 10.9)
+    };
+    \addplot[fill=red,ybar] plot coordinates {
+	    (5 Threads, 14.7)
+    };
+    \addplot[fill=red,ybar] plot coordinates {
+	    (6 Threads, 13.0)
+    };
+    \addplot[fill=red,ybar] plot coordinates {
+	    (7 Threads, 11.5)
+    };
+    \addplot[fill=blue,ybar] plot coordinates {
+	    (8 Threads, 10.1)
+    };
+
+  \end{axis}
+\end{tikzpicture}
+
+\end{document}
