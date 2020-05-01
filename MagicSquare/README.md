@@ -1,4 +1,4 @@
-# Opmizing C++ - Brute Force Problem
+# 1> Opmizing C++ - Brute Force Problem
 
 I write this article to show some optimizations in C++ can accelerate
 enormously the execution of sequential codes. In this case, I show a solution I
