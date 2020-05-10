@@ -259,3 +259,207 @@ from 4 to 7 threads but I obtained an improvement of 1% from 4 to 8 threads:
 In the next posts, I will be showing how to offload the code to GPUs with
 OpenACC and CUDA and I will finalize using the native multithread library of
 C++, so don't miss them ;).
+
+# 3> Optimizing C++ - Offloading N-Body Problem to GPUs with OpenACC
+
+Glory Moore Law days have gone. Before 2003 the number of transistors per
+processor duplicated every 2 years. In those years programmers were waiting for
+the next new processor with higher frequency and high memory bandwidth;
+unfortunately, the physical limitations in power dissipation and leak currents
+in the nanometer scale of the transistors have stopped the design basis of
+increasing transistors density, reducing voltage and increasing frequency. This
+has impulsed the development of new ideas in multi-core and heterogeneous
+computing enabling further acceleration of software execution allowing to reach
+new frontiers in floating-point point and integer operation performance.
+
+In this case, as I have promised, I will offload the N-Body problem to GPUs
+using OpenACC. For the test, I will be using my laptop which has a GeForce GTX
+1050 3 GB Max-Q NVIDIA GPU and Quadcore Intel i5-9300H CPU @ 2.40GHz. As
+always, you can check the original version of the code and the
+optimized/accelerated version in the GitHub repository. If you have a GPU you
+can also try the PGI compiler to get similar results as this article.
+
+The first thing we have to do before starting to accelerate the code is to move
+all the data possible from the host (the memory used by the CPU) to the device
+(video memory of the GPU). Why? The CPU and the GPU are not in the same chip,
+they are connected by a physical media, e.g. a cable and a communication
+protocol (PCI express, nvlink, etc), so the time required to communicate data
+from CPU to GPU and vice-versa can be comparable with the time of useful
+computations or even more. For this reason, we have to avoid as much as
+possible the communications to increase the computing performance, and in this
+way, keeping the GPU busy and operating the whole time on the data with the
+ALUs and FPUs.
+
+For moving the data from host to device and vice-versa I have added a method to
+the main class of the N-Body code called mMoveToDevice() and mMoveToHost():
+
+```c++
+void Problem::mMoveToDevice()
+{
+#pragma acc enter data copyin(this[0:1], mParticles[0:mNumParticles])
+}
+
+void Problem::mMoveToHost()
+{
+#pragma acc update self(mParticles[0:mNumParticles])
+}
+```
+
+Thus before solving the time loop (most computationally intensive part), a call
+to mMoveToDevice() will move the particle related data to the GPU memory which
+is needed to start computing the new positions and velocities by the cores of
+the device:
+
+```c++
+...
+
+int main()
+{
+    problem.mMoveToDevice();
+
+    for (int ts = 0; ts < nTimeSteps; ts++) {
+         
+         problem.integrate();
+    }
+    return 0;
+}
+```
+
+You can also do a call to mMoveToHost() for moving the computed data back to
+the CPU memory, e.g., for example for postprocessing and write it in a file.
+Take into account that this last can significantly deteriorate the performance
+of the algorithm.
+
+Now, with the particle data stored in the GPU is possible to start integrating
+the positions and velocities of the particles inside the GPU. With OpenACC it
+is as easy as:
+
+```c++
+void Problem::integrate()
+{
+
+
+#pragma acc parallel loop present (this[0:1], mParticles[0:mNumParticles])
+    for (int pi = 0; pi < mNumParticles; pi++) {
+
+         ...
+
+    }
+
+
+#pragma acc parallel loop present (this[0:1], mParticles[0:mNumParticles])
+    for (int pi = 0; pi < mNumParticles; pi++) {
+   
+         ...
+
+    }
+
+}
+```
+
+Note that we have added the decorator "present" in the pragmas to indicate to
+the compiler that the data is already copied to the GPU memory. If we wouldn't
+do that the compiler would generate a code which in each time step (when the
+call to the integrate() function is done) which would copy data from the CPU to
+the GPU adding a lot of overhead and unneeded copies. So, it is crucial to
+specify that in order to maximize the throughput.
+
+As we can see, inside the outer for-loop there are some calls to sqrt(double)
+function, this is a problem since the compiler doesn't know how the threads are
+going to execute it, e.g. it can be a CUDA kernel or a simple sequential
+function. So for fixing this problem, we have to specify that we want to
+execute sqrt(double) sequentially with one thread. The way I do this is by
+using the headers provided by PGI. In this case, I have replaced the C math
+library include:
+
+```c++
+#include <cmath>
+```
+
+with
+
+```c++
+#include <accelmath.h>
+```
+
+In this way, the program is going to use the PGI own implementation of the
+sqrt() function, and not the one from the C math library.
+
+PGI compiler also does not support some C++ features, for example, I had to
+replace the zero initializers of the force:
+
+```c++
+double force[3] = {};
+```
+
+with
+
+```c++
+double force[3] = {0, 0, 0};
+```
+
+These issues are solved in each new version of PGI; hopefully, in some months
+or years, the modern C++ standard will be supported by the compiler.
+
+So now it is time to test if our GPU offloading works. I have modified in this
+case the parameter of the simulation to 5-time steps and 100K particles to make
+more significant the improvements using GPU acceleration against the CPU. I
+will compare it with one-core-only and OpenMP execution. For this, I use the
+OpenMP support offered by PGI compiler. Notice that I can reuse the same OpenMP
+pragmas of the previous article to generate code for OpenMP and OpenACC at the
+same time:
+
+```c++
+#pragma omp parallel for
+#pragma acc parallel loop present (this[0:1], mParticles[0:mNumParticles])
+    for (int pi = 0; pi < mNumParticles; pi++) {
+         
+         ...
+    }
+```
+
+For the one-core-only execution, I compiled and run as:
+
+```bash
+$ pgc++ main-acc.cpp -o main-acc-cpu -O3
+$ time ./main-acc-cpu
+
+real    3m7.376s
+user    3m7.258s
+sys     0m0.007s
+```
+
+For OpenMP:
+
+```bash
+$ pgc++ main-acc.cpp -o main-acc-cpu-omp -O3 -mp
+$ export OMP_NUM_THREADS=8
+$ time ./main-acc-cpu-omp
+real    0m48.323s
+user    6m22.577s
+sys     0m0.140s
+```
+
+And finally, for OpenACC:
+
+```bash
+$ pgc++ main-acc.cpp -o main-acc-cpu-omp -O3 -acc -Minfo=accel
+$ time ./main-acc
+
+real    0m38.461s
+user    0m37.921s
+sys     0m0.417s
+```
+
+As you can see, we obtained a speedup of x3.9 with OpenMP and x4.9 with
+OpenACC. In the next figure we outlined these results:
+
+<img src="pics/plot-acc.png" width="650">
+
+In the next article, I will offload the N-Body code using CUDA, the interface
+and the library provided by NVIDIA. CUDA enables much more flexibility and
+control, allowing to perform better optimizations than OpenACC. The
+disadvantage is that the portability of the code with CUDA is less than
+OpenACC. Note that with OpenACC we had to add some simple pragmas only. In all
+the cases, knowing CUDA is another weapon you can have before going to the
+battlefield and it can help you to accelerate even more your software.
