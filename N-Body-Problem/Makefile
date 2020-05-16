@@ -1,4 +1,4 @@
-all: main main-omp main-acc main-acc-cpu main-acc-cpu-omp
+all: main main-omp main-acc main-acc-cpu main-acc-cpu-omp main-cuda
 
 main: main.cpp
 	g++ $^ -o $@ -O3
@@ -14,3 +14,6 @@ main-acc-cpu: main-acc.cpp
 
 main-acc-cpu-omp: main-acc.cpp
 	pgc++ $^ -o $@ -O3 -mp
+
+main-cuda: main-cuda.cpp
+	nvcc -x cu $^ -o $@ -O3

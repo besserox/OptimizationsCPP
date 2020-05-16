@@ -5,10 +5,11 @@
 *.pdf
 *#
 *.o
+main
 main-cpu
 main-omp
 main-acc
 main-acc-cpu
 main-acc-cpu-omp
-particles-*
-
+main-cuda
+particles*
